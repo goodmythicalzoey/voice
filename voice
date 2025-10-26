@@ -1,526 +1,586 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, CheckCircle2, Circle, Star, Book, Mic, Heart, TrendingUp, Award, Volume2, Wind, MessageCircle, Sparkles } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Training Tracker</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; font-family: system-ui, -apple-system, sans-serif; }
+        .animate-bounce { animation: bounce 1s ease-in-out; }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-const VoiceTrainingTracker = () => {
-  const [currentPhase, setCurrentPhase] = useState(1);
-  const [dayInPhase, setDayInPhase] = useState(1);
-  const [completedToday, setCompletedToday] = useState({
-    warmup: false,
-    technique: false,
-    application: false,
-    cooldown: false
-  });
-  const [dailyNote, setDailyNote] = useState('');
-  const [strainLevel, setStrainLevel] = useState(0);
-  const [showCelebration, setShowCelebration] = useState(false);
-  const [totalDays, setTotalDays] = useState(1);
-  const [currentView, setCurrentView] = useState('today');
+    <script type="text/babel">
+        const { useState, useEffect } = React;
 
-  const phases = {
-    1: { name: 'Foundation & Building Stamina', weeks: '1-2', duration: '10-15 min', days: 14 },
-    2: { name: 'Expanding Practice', weeks: '3-4', duration: '20-30 min', days: 14 },
-    3: { name: 'Integration & Refinement', weeks: '5-8', duration: '35-45 min', days: 28 },
-    4: { name: 'Maintenance & Mastery', weeks: 'Ongoing', duration: '45 min', days: 999 }
-  };
+        // Icon components (simplified SVG versions)
+        const Icon = ({ d, ...props }) => (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+                <path d={d} />
+            </svg>
+        );
 
-  const exercises = {
-    1: {
-      warmup: [
-        { exercise: 'Diaphragmatic breathing (2 min)', description: 'Breathe deeply from your belly, not your chest. Hand on stomach should rise and fall.' },
-        { exercise: 'Gentle humming scales (3 min)', description: 'Hum up and down your comfortable range softly. Feel the vibration in your face.' },
-        { exercise: 'Lip trills and sirens (3 min)', description: 'Make "brrrr" sounds sliding up and down. Loosens lips and warms vocal cords gently.' },
-        { exercise: 'Jaw and tongue stretches (2 min)', description: 'Open jaw wide, move it side to side. Stick tongue out and move it around. Releases tension.' }
-      ],
-      technique: [
-        { exercise: 'Breath support exercises (5 min)', description: 'Practice controlling airflow with "sss" sounds. Strong, steady breath supports better voice control.' },
-        { exercise: 'Sustained "hmmm" for resonance (5 min)', description: 'Hold a hum and feel where it vibrates. Try moving the feeling higher in your face/nose.' },
-        { exercise: 'Listening to voice models (5 min)', description: 'Pick one creator and really listen. Notice pitch, melody, pacing, and energy of their speech.' }
-      ],
-      application: [
-        { exercise: 'Read aloud softly (5 min)', description: 'Read a few paragraphs focusing on breath and staying relaxed. Don\'t push for "the voice" yet.' },
-        { exercise: 'Practice single sentences with focus (5 min)', description: 'Pick 3-5 simple sentences. Repeat each one, trying slight variations in pitch or resonance.' }
-      ],
-      cooldown: [
-        { exercise: 'Gentle humming down', description: 'Hum slowly down to your lowest comfortable pitch. Helps relax the voice.' },
-        { exercise: 'Hydrate', description: 'Drink water! Vocal cords need moisture to stay healthy and flexible.' },
-        { exercise: 'Note any strain or discoveries', description: 'What felt good? What hurt? What surprised you? Write it down in your reflection.' }
-      ]
-    },
-    2: {
-      warmup: [
-        { exercise: 'Diaphragmatic breathing (2 min)', description: 'Deep belly breaths. Make sure shoulders stay relaxed and still.' },
-        { exercise: 'Humming scales with focus (3 min)', description: 'Hum scales while focusing on keeping resonance bright and forward in your face.' },
-        { exercise: 'Sirens exploring range (3 min)', description: 'Slide through your full range on "ng" or hum. Find where your voice feels most comfortable.' },
-        { exercise: 'Resonance placement hums (2 min)', description: 'Hum and alternate focusing vibration in chest vs. nose/face. Notice the difference in sound.' }
-      ],
-      technique: [
-        { exercise: 'Pitch glides and holding (7 min)', description: 'Glide to target pitch on "ah", hold it steady. Practice finding and maintaining your goal pitch.' },
-        { exercise: 'Resonance exercises - bright vs dark (7 min)', description: 'Say vowels with chest resonance (dark) then face resonance (bright). Feel the difference.' },
-        { exercise: 'Intonation patterns practice (6 min)', description: 'Practice making your voice go up at end of questions, down for statements. Exaggerate the melody.' },
-        { exercise: 'Mimicking voice model phrases (5 min)', description: 'Pick a short phrase from your model. Try to match their exact melody and rhythm.' }
-      ],
-      application: [
-        { exercise: 'Reading with intention (7 min)', description: 'Read with emotional expression. Let your voice rise and fall naturally with the meaning.' },
-        { exercise: 'Practice common phrases (5 min)', description: 'Repeat everyday phrases ("How are you?", "That sounds great!") with your new techniques.' },
-        { exercise: 'Record short samples (3 min)', description: 'Record yourself reading or talking. Don\'t judge, just capture where you are today.' }
-      ],
-      cooldown: [
-        { exercise: 'Descending hums', description: 'Hum from high to low, releasing tension as you go down.' },
-        { exercise: 'Vocal rest posture', description: 'Sit or stand with good posture, breathe naturally, let your voice rest completely.' },
-        { exercise: 'Journal observations', description: 'What\'s getting easier? What\'s still challenging? Track patterns over time.' }
-      ]
-    },
-    3: {
-      warmup: [
-        { exercise: 'Full breathing routine (3 min)', description: 'Complete breath work: belly breathing, breath holds, controlled exhales. Build stamina.' },
-        { exercise: 'Resonance warm-up (3 min)', description: 'Hum, then add vowels while maintaining forward, bright resonance. Feel it in your mask.' },
-        { exercise: 'Range exploration (4 min)', description: 'Explore your full range with scales, glides, and sustained notes at different pitches.' }
-      ],
-      technique: [
-        { exercise: 'Pitch control exercises (8 min)', description: 'Hit specific target pitches and hold them steady while speaking words and phrases.' },
-        { exercise: 'Speech melody patterns (8 min)', description: 'Practice the musicality of sentences: rising questions, falling statements, emphasis patterns.' },
-        { exercise: 'Conversational flow practice (7 min)', description: 'Speak in longer conversational chunks. Focus on maintaining techniques while sounding natural.' },
-        { exercise: 'Difficult sound combos (5 min)', description: 'Practice words/sounds that make you slip back to old patterns. Repetition builds new habits.' }
-      ],
-      application: [
-        { exercise: 'Read varied content (8 min)', description: 'Read different types of text: news, stories, dialogue. Adapt your voice to the content.' },
-        { exercise: 'Simulate conversations (10 min)', description: 'Have imaginary conversations or answer pretend questions. Practice spontaneous speech.' },
-        { exercise: 'Listen back to recordings (5 min)', description: 'Listen to your recent recordings. Notice improvements and areas to focus on.' }
-      ],
-      cooldown: [
-        { exercise: 'Voice massage techniques', description: 'Gently massage your throat, jaw, and neck. Release any accumulated tension.' },
-        { exercise: 'Reflection on naturalness', description: 'How natural did your voice feel today? The goal is comfort, not perfection.' },
-        { exercise: 'Celebrate progress', description: 'Acknowledge something you did well today, even if small. Progress isn\'t always linear.' }
-      ]
-    },
-    4: {
-      warmup: [
-        { exercise: 'Comprehensive warm-up routine (5 min)', description: 'Your personal warm-up combining breathing, humming, range work, and resonance focus.' }
-      ],
-      technique: [
-        { exercise: 'Maintenance of all skills (20 min)', description: 'Run through pitch, resonance, intonation, and breath work. Keep all skills sharp.' },
-        { exercise: 'Challenging material practice (10 min)', description: 'Read difficult passages, practice challenging conversations, push your comfort zone.' },
-        { exercise: 'Fine-tuning specific areas (10 min)', description: 'Focus on whatever needs work: maybe certain sounds, maintaining pitch, or natural flow.' }
-      ],
-      application: [
-        { exercise: 'Real-world application (15 min)', description: 'Use your voice in real scenarios: phone calls, voice messages, or safe in-person practice.' },
-        { exercise: 'Recording and analysis (10 min)', description: 'Record longer samples, compare to older recordings, analyze what\'s working and what to refine.' }
-      ],
-      cooldown: [
-        { exercise: 'Full cool-down and reflection', description: 'Complete vocal rest routine, hydration, and thoughtful reflection on your ongoing journey.' }
-      ]
-    }
-  };
+        const CheckCircle2 = (props) => <Icon d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm-1-6l7-7" {...props} />;
+        const Circle = (props) => <Icon d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" {...props} />;
+        const Star = ({ fill, ...props }) => <Icon d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill={fill ? "currentColor" : "none"} {...props} />;
+        const Wind = (props) => <Icon d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2" {...props} />;
+        const Mic = (props) => <Icon d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3zm-7 11a7 7 0 0 0 14 0M12 19v4m-4 0h8" {...props} />;
+        const MessageCircle = (props) => <Icon d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" {...props} />;
+        const Heart = (props) => <Icon d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" {...props} />;
+        const Volume2 = (props) => <Icon d="M11 5L6 9H2v6h4l5 4V5zm8.07 2.93a10 10 0 0 1 0 14.14M15.54 10.46a5 5 0 0 1 0 7.07" {...props} />;
+        const Book = (props) => <Icon d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z" {...props} />;
+        const TrendingUp = (props) => <Icon d="M22 7l-8.5 8.5-5-5L2 17m20-10h-6m6 0v6" {...props} />;
+        const Award = (props) => <Icon d="M12 15a7 7 0 1 0 0-14 7 7 0 0 0 0 14zm-3.5 4l1.5-4.5m4.5 4.5l-1.5-4.5" {...props} />;
+        const Sparkles = (props) => <Icon d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M9 12a3 3 0 1 0 6 0 3 3 0 0 0-6 0z" {...props} />;
 
-  const milestones = [
-    { day: 7, title: 'One Week Strong!', message: 'You showed up for yourself every day this week. That consistency is everything! 🌟' },
-    { day: 14, title: 'Foundation Complete!', message: 'You\'ve built the habit and learned the basics. Ready for Phase 2! 🎉' },
-    { day: 21, title: 'Three Weeks In!', message: 'Your voice is already changing. Can you hear it? Keep going! 💪' },
-    { day: 28, title: 'One Month Milestone!', message: 'A full month of dedication! You\'re doing amazing work. 🏆' },
-    { day: 42, title: 'Phase 2 Complete!', message: 'Your techniques are getting stronger. Time to integrate! 🚀' },
-    { day: 56, title: 'Eight Weeks!', message: 'Two months of growth and learning. You should be proud! ⭐' },
-    { day: 70, title: 'Phase 3 Complete!', message: 'You\'re integrating your voice naturally now. Beautiful! 🌈' },
-    { day: 100, title: '100 Days of Voice!', message: 'ONE HUNDRED DAYS! This is monumental. Your voice is truly yours! 🎊' }
-  ];
+        const VoiceTrainingTracker = () => {
+            const [currentPhase, setCurrentPhase] = useState(1);
+            const [dayInPhase, setDayInPhase] = useState(1);
+            const [completedToday, setCompletedToday] = useState({
+                warmup: false,
+                technique: false,
+                application: false,
+                cooldown: false
+            });
+            const [dailyNote, setDailyNote] = useState('');
+            const [strainLevel, setStrainLevel] = useState(0);
+            const [showCelebration, setShowCelebration] = useState(false);
+            const [totalDays, setTotalDays] = useState(1);
+            const [currentView, setCurrentView] = useState('today');
+            const [lastCompletedDate, setLastCompletedDate] = useState(null);
 
-  const voiceModels = [
-    {
-      name: 'TransVoiceLessons (Zhea)',
-      platform: 'YouTube',
-      description: 'Comprehensive trans voice training with scientific approach. Excellent for understanding mechanics.',
-      link: 'Search: TransVoiceLessons YouTube'
-    },
-    {
-      name: 'Zoey Alexandria',
-      platform: 'YouTube',
-      description: 'Clear, methodical lessons focusing on resonance and practical exercises.',
-      link: 'Search: Zoey Alexandria voice training'
-    },
-    {
-      name: 'Seattle Voice Lab',
-      platform: 'YouTube',
-      description: 'Professional voice feminization content with detailed technique breakdowns.',
-      link: 'Search: Seattle Voice Lab'
-    },
-    {
-      name: 'Nicole Windy Wick',
-      platform: 'YouTube/TikTok',
-      description: 'Quick tips and demonstrations with an encouraging approach.',
-      link: 'Search: Nicole Windy Wick voice'
-    },
-    {
-      name: 'Clover',
-      platform: 'YouTube',
-      description: 'Trans voice content creator with practical everyday examples.',
-      link: 'Search: Clover trans voice'
-    }
-  ];
+            // Load state from localStorage on mount
+            useEffect(() => {
+                const saved = localStorage.getItem('voiceTrainingData');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    setCurrentPhase(data.currentPhase || 1);
+                    setDayInPhase(data.dayInPhase || 1);
+                    setTotalDays(data.totalDays || 1);
+                    setLastCompletedDate(data.lastCompletedDate || null);
+                    
+                    // Check if it's a new day
+                    const today = new Date().toDateString();
+                    if (data.lastCompletedDate !== today) {
+                        setCompletedToday({ warmup: false, technique: false, application: false, cooldown: false });
+                        setDailyNote('');
+                        setStrainLevel(0);
+                    } else {
+                        setCompletedToday(data.completedToday || { warmup: false, technique: false, application: false, cooldown: false });
+                        setDailyNote(data.dailyNote || '');
+                        setStrainLevel(data.strainLevel || 0);
+                    }
+                }
+            }, []);
 
-  const tips = [
-    'Hydration is key! Keep water nearby during practice.',
-    'If you feel strain, stop immediately. Rest is productive too.',
-    'Recording yourself helps track progress you might not hear in the moment.',
-    'Practice in private first, then gradually in comfortable settings.',
-    'Your voice may sound different to you than to others - that\'s normal!',
-    'Consistency beats intensity. Small daily practice > occasional long sessions.',
-    'Some days will feel like regression - that\'s part of learning.',
-    'Celebrate small wins! Every step forward matters.',
-    'Your voice is valid at every stage of this journey.',
-    'Take breaks between exercises to avoid fatigue.'
-  ];
+            // Save state to localStorage whenever it changes
+            useEffect(() => {
+                const data = {
+                    currentPhase,
+                    dayInPhase,
+                    totalDays,
+                    completedToday,
+                    dailyNote,
+                    strainLevel,
+                    lastCompletedDate
+                };
+                localStorage.setItem('voiceTrainingData', JSON.stringify(data));
+            }, [currentPhase, dayInPhase, totalDays, completedToday, dailyNote, strainLevel, lastCompletedDate]);
 
-  const checkMilestone = (day) => {
-    const milestone = milestones.find(m => m.day === day);
-    if (milestone && !showCelebration) {
-      setShowCelebration(milestone);
-    }
-  };
+            const phases = {
+                1: { name: 'Foundation & Building Stamina', weeks: '1-2', duration: '10-15 min', days: 14 },
+                2: { name: 'Expanding Practice', weeks: '3-4', duration: '20-30 min', days: 14 },
+                3: { name: 'Integration & Refinement', weeks: '5-8', duration: '35-45 min', days: 28 },
+                4: { name: 'Maintenance & Mastery', weeks: 'Ongoing', duration: '45 min', days: 999 }
+            };
 
-  const completeExercise = (type) => {
-    const newCompleted = { ...completedToday, [type]: !completedToday[type] };
-    setCompletedToday(newCompleted);
-    
-    if (Object.values(newCompleted).every(v => v)) {
-      setTimeout(() => checkMilestone(totalDays), 500);
-    }
-  };
+            const exercises = {
+                1: {
+                    warmup: [
+                        { exercise: 'Diaphragmatic breathing (2 min)', description: 'Breathe deeply from your belly, not your chest. Hand on stomach should rise and fall.' },
+                        { exercise: 'Gentle humming scales (3 min)', description: 'Hum up and down your comfortable range softly. Feel the vibration in your face.' },
+                        { exercise: 'Lip trills and sirens (3 min)', description: 'Make "brrrr" sounds sliding up and down. Loosens lips and warms vocal cords gently.' },
+                        { exercise: 'Jaw and tongue stretches (2 min)', description: 'Open jaw wide, move it side to side. Stick tongue out and move it around. Releases tension.' }
+                    ],
+                    technique: [
+                        { exercise: 'Breath support exercises (5 min)', description: 'Practice controlling airflow with "sss" sounds. Strong, steady breath supports better voice control.' },
+                        { exercise: 'Sustained "hmmm" for resonance (5 min)', description: 'Hold a hum and feel where it vibrates. Try moving the feeling higher in your face/nose.' },
+                        { exercise: 'Listening to voice models (5 min)', description: 'Pick one creator and really listen. Notice pitch, melody, pacing, and energy of their speech.' }
+                    ],
+                    application: [
+                        { exercise: 'Read aloud softly (5 min)', description: 'Read a few paragraphs focusing on breath and staying relaxed. Don\'t push for "the voice" yet.' },
+                        { exercise: 'Practice single sentences with focus (5 min)', description: 'Pick 3-5 simple sentences. Repeat each one, trying slight variations in pitch or resonance.' }
+                    ],
+                    cooldown: [
+                        { exercise: 'Gentle humming down', description: 'Hum slowly down to your lowest comfortable pitch. Helps relax the voice.' },
+                        { exercise: 'Hydrate', description: 'Drink water! Vocal cords need moisture to stay healthy and flexible.' },
+                        { exercise: 'Note any strain or discoveries', description: 'What felt good? What hurt? What surprised you? Write it down in your reflection.' }
+                    ]
+                },
+                2: {
+                    warmup: [
+                        { exercise: 'Diaphragmatic breathing (2 min)', description: 'Deep belly breaths. Make sure shoulders stay relaxed and still.' },
+                        { exercise: 'Humming scales with focus (3 min)', description: 'Hum scales while focusing on keeping resonance bright and forward in your face.' },
+                        { exercise: 'Sirens exploring range (3 min)', description: 'Slide through your full range on "ng" or hum. Find where your voice feels most comfortable.' },
+                        { exercise: 'Resonance placement hums (2 min)', description: 'Hum and alternate focusing vibration in chest vs. nose/face. Notice the difference in sound.' }
+                    ],
+                    technique: [
+                        { exercise: 'Pitch glides and holding (7 min)', description: 'Glide to target pitch on "ah", hold it steady. Practice finding and maintaining your goal pitch.' },
+                        { exercise: 'Resonance exercises - bright vs dark (7 min)', description: 'Say vowels with chest resonance (dark) then face resonance (bright). Feel the difference.' },
+                        { exercise: 'Intonation patterns practice (6 min)', description: 'Practice making your voice go up at end of questions, down for statements. Exaggerate the melody.' },
+                        { exercise: 'Mimicking voice model phrases (5 min)', description: 'Pick a short phrase from your model. Try to match their exact melody and rhythm.' }
+                    ],
+                    application: [
+                        { exercise: 'Reading with intention (7 min)', description: 'Read with emotional expression. Let your voice rise and fall naturally with the meaning.' },
+                        { exercise: 'Practice common phrases (5 min)', description: 'Repeat everyday phrases ("How are you?", "That sounds great!") with your new techniques.' },
+                        { exercise: 'Record short samples (3 min)', description: 'Record yourself reading or talking. Don\'t judge, just capture where you are today.' }
+                    ],
+                    cooldown: [
+                        { exercise: 'Descending hums', description: 'Hum from high to low, releasing tension as you go down.' },
+                        { exercise: 'Vocal rest posture', description: 'Sit or stand with good posture, breathe naturally, let your voice rest completely.' },
+                        { exercise: 'Journal observations', description: 'What\'s getting easier? What\'s still challenging? Track patterns over time.' }
+                    ]
+                },
+                3: {
+                    warmup: [
+                        { exercise: 'Full breathing routine (3 min)', description: 'Complete breath work: belly breathing, breath holds, controlled exhales. Build stamina.' },
+                        { exercise: 'Resonance warm-up (3 min)', description: 'Hum, then add vowels while maintaining forward, bright resonance. Feel it in your mask.' },
+                        { exercise: 'Range exploration (4 min)', description: 'Explore your full range with scales, glides, and sustained notes at different pitches.' }
+                    ],
+                    technique: [
+                        { exercise: 'Pitch control exercises (8 min)', description: 'Hit specific target pitches and hold them steady while speaking words and phrases.' },
+                        { exercise: 'Speech melody patterns (8 min)', description: 'Practice the musicality of sentences: rising questions, falling statements, emphasis patterns.' },
+                        { exercise: 'Conversational flow practice (7 min)', description: 'Speak in longer conversational chunks. Focus on maintaining techniques while sounding natural.' },
+                        { exercise: 'Difficult sound combos (5 min)', description: 'Practice words/sounds that make you slip back to old patterns. Repetition builds new habits.' }
+                    ],
+                    application: [
+                        { exercise: 'Read varied content (8 min)', description: 'Read different types of text: news, stories, dialogue. Adapt your voice to the content.' },
+                        { exercise: 'Simulate conversations (10 min)', description: 'Have imaginary conversations or answer pretend questions. Practice spontaneous speech.' },
+                        { exercise: 'Listen back to recordings (5 min)', description: 'Listen to your recent recordings. Notice improvements and areas to focus on.' }
+                    ],
+                    cooldown: [
+                        { exercise: 'Voice massage techniques', description: 'Gently massage your throat, jaw, and neck. Release any accumulated tension.' },
+                        { exercise: 'Reflection on naturalness', description: 'How natural did your voice feel today? The goal is comfort, not perfection.' },
+                        { exercise: 'Celebrate progress', description: 'Acknowledge something you did well today, even if small. Progress isn\'t always linear.' }
+                    ]
+                },
+                4: {
+                    warmup: [
+                        { exercise: 'Comprehensive warm-up routine (5 min)', description: 'Your personal warm-up combining breathing, humming, range work, and resonance focus.' }
+                    ],
+                    technique: [
+                        { exercise: 'Maintenance of all skills (20 min)', description: 'Run through pitch, resonance, intonation, and breath work. Keep all skills sharp.' },
+                        { exercise: 'Challenging material practice (10 min)', description: 'Read difficult passages, practice challenging conversations, push your comfort zone.' },
+                        { exercise: 'Fine-tuning specific areas (10 min)', description: 'Focus on whatever needs work: maybe certain sounds, maintaining pitch, or natural flow.' }
+                    ],
+                    application: [
+                        { exercise: 'Real-world application (15 min)', description: 'Use your voice in real scenarios: phone calls, voice messages, or safe in-person practice.' },
+                        { exercise: 'Recording and analysis (10 min)', description: 'Record longer samples, compare to older recordings, analyze what\'s working and what to refine.' }
+                    ],
+                    cooldown: [
+                        { exercise: 'Full cool-down and reflection', description: 'Complete vocal rest routine, hydration, and thoughtful reflection on your ongoing journey.' }
+                    ]
+                }
+            };
 
-  const advanceDay = () => {
-    if (Object.values(completedToday).every(v => v)) {
-      const newTotalDays = totalDays + 1;
-      setTotalDays(newTotalDays);
-      
-      const newDayInPhase = dayInPhase + 1;
-      if (newDayInPhase > phases[currentPhase].days && currentPhase < 4) {
-        setCurrentPhase(currentPhase + 1);
-        setDayInPhase(1);
-      } else {
-        setDayInPhase(newDayInPhase);
-      }
-      
-      setCompletedToday({ warmup: false, technique: false, application: false, cooldown: false });
-      setDailyNote('');
-      setStrainLevel(0);
-      checkMilestone(newTotalDays);
-    }
-  };
+            const milestones = [
+                { day: 7, title: 'One Week Strong!', message: 'You showed up for yourself every day this week. That consistency is everything! 🌟' },
+                { day: 14, title: 'Foundation Complete!', message: 'You\'ve built the habit and learned the basics. Ready for Phase 2! 🎉' },
+                { day: 21, title: 'Three Weeks In!', message: 'Your voice is already changing. Can you hear it? Keep going! 💪' },
+                { day: 28, title: 'One Month Milestone!', message: 'A full month of dedication! You\'re doing amazing work. 🏆' },
+                { day: 42, title: 'Phase 2 Complete!', message: 'Your techniques are getting stronger. Time to integrate! 🚀' },
+                { day: 56, title: 'Eight Weeks!', message: 'Two months of growth and learning. You should be proud! ⭐' },
+                { day: 70, title: 'Phase 3 Complete!', message: 'You\'re integrating your voice naturally now. Beautiful! 🌈' },
+                { day: 100, title: '100 Days of Voice!', message: 'ONE HUNDRED DAYS! This is monumental. Your voice is truly yours! 🎊' }
+            ];
 
-  const ExerciseSection = ({ title, type, icon: Icon, exercises }) => (
-    <div className="mb-6 bg-white rounded-lg shadow-sm border-2 border-purple-100 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Icon className="text-purple-500" size={20} />
-          <h3 className="font-semibold text-gray-800">{title}</h3>
-        </div>
-        <button
-          onClick={() => completeExercise(type)}
-          className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium transition-all ${
-            completedToday[type]
-              ? 'bg-green-500 text-white'
-              : 'bg-gray-200 text-gray-600 hover:bg-purple-100'
-          }`}
-        >
-          {completedToday[type] ? <CheckCircle2 size={16} /> : <Circle size={16} />}
-          {completedToday[type] ? 'Done!' : 'Mark Complete'}
-        </button>
-      </div>
-      <ul className="space-y-2">
-        {exercises.map((item, idx) => (
-          <li key={idx} className="text-gray-700">
-            <div className="flex items-start gap-2">
-              <span className="text-purple-400 mt-1">•</span>
-              <div className="flex-1">
-                <div className="font-medium">{item.exercise}</div>
-                <div className="text-sm text-gray-600 mt-1">{item.description}</div>
-              </div>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+            const voiceModels = [
+                { name: 'TransVoiceLessons (Zhea)', platform: 'YouTube', description: 'Comprehensive trans voice training with scientific approach. Excellent for understanding mechanics.', link: 'Search: TransVoiceLessons YouTube' },
+                { name: 'Zoey Alexandria', platform: 'YouTube', description: 'Clear, methodical lessons focusing on resonance and practical exercises.', link: 'Search: Zoey Alexandria voice training' },
+                { name: 'Seattle Voice Lab', platform: 'YouTube', description: 'Professional voice feminization content with detailed technique breakdowns.', link: 'Search: Seattle Voice Lab' },
+                { name: 'Nicole Windy Wick', platform: 'YouTube/TikTok', description: 'Quick tips and demonstrations with an encouraging approach.', link: 'Search: Nicole Windy Wick voice' },
+                { name: 'Clover', platform: 'YouTube', description: 'Trans voice content creator with practical everyday examples.', link: 'Search: Clover trans voice' }
+            ];
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 p-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-1">Voice Training Journey</h1>
-              <p className="text-gray-600">Your voice, your way ✨</p>
-            </div>
-            <div className="text-right">
-              <div className="text-3xl font-bold text-purple-600">{totalDays}</div>
-              <div className="text-sm text-gray-600">days strong</div>
-            </div>
-          </div>
-          
-          {/* Phase Progress */}
-          <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <div className="text-sm font-medium text-purple-800">Phase {currentPhase}</div>
-                <div className="font-semibold text-gray-800">{phases[currentPhase].name}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm text-gray-600">Weeks {phases[currentPhase].weeks}</div>
-                <div className="font-medium text-purple-600">{phases[currentPhase].duration}/day</div>
-              </div>
-            </div>
-            <div className="bg-white rounded-full h-2 overflow-hidden">
-              <div 
-                className="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-500"
-                style={{ width: `${(dayInPhase / phases[currentPhase].days) * 100}%` }}
-              />
-            </div>
-            <div className="text-xs text-gray-600 mt-1 text-right">
-              Day {dayInPhase} of {phases[currentPhase].days === 999 ? 'ongoing' : phases[currentPhase].days}
-            </div>
-          </div>
-        </div>
+            const tips = [
+                'Hydration is key! Keep water nearby during practice.',
+                'If you feel strain, stop immediately. Rest is productive too.',
+                'Recording yourself helps track progress you might not hear in the moment.',
+                'Practice in private first, then gradually in comfortable settings.',
+                'Your voice may sound different to you than to others - that\'s normal!',
+                'Consistency beats intensity. Small daily practice > occasional long sessions.',
+                'Some days will feel like regression - that\'s part of learning.',
+                'Celebrate small wins! Every step forward matters.',
+                'Your voice is valid at every stage of this journey.',
+                'Take breaks between exercises to avoid fatigue.'
+            ];
 
-        {/* Navigation */}
-        <div className="flex gap-2 mb-6">
-          {['today', 'resources', 'progress'].map(view => (
-            <button
-              key={view}
-              onClick={() => setCurrentView(view)}
-              className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
-                currentView === view
-                  ? 'bg-purple-600 text-white shadow-md'
-                  : 'bg-white text-gray-600 hover:bg-purple-50'
-              }`}
-            >
-              {view === 'today' && '📅 Today\'s Practice'}
-              {view === 'resources' && '📚 Resources'}
-              {view === 'progress' && '📈 Progress'}
-            </button>
-          ))}
-        </div>
+            const checkMilestone = (day) => {
+                const milestone = milestones.find(m => m.day === day);
+                if (milestone && !showCelebration) {
+                    setShowCelebration(milestone);
+                }
+            };
 
-        {/* Today's Practice View */}
-        {currentView === 'today' && (
-          <div>
-            {/* Today's tip */}
-            <div className="bg-blue-50 border-l-4 border-blue-400 rounded-lg p-4 mb-6">
-              <div className="flex items-start gap-3">
-                <Sparkles className="text-blue-500 mt-1" size={20} />
-                <div>
-                  <div className="font-semibold text-blue-900 mb-1">Today's Tip</div>
-                  <p className="text-blue-800">{tips[totalDays % tips.length]}</p>
-                </div>
-              </div>
-            </div>
+            const completeExercise = (type) => {
+                const newCompleted = { ...completedToday, [type]: !completedToday[type] };
+                setCompletedToday(newCompleted);
+                
+                if (Object.values(newCompleted).every(v => v)) {
+                    setTimeout(() => checkMilestone(totalDays), 500);
+                }
+            };
 
-            {/* Exercise sections */}
-            <ExerciseSection 
-              title="Warm-Up" 
-              type="warmup" 
-              icon={Wind}
-              exercises={exercises[currentPhase].warmup}
-            />
-            
-            <ExerciseSection 
-              title="Technique Work" 
-              type="technique" 
-              icon={Mic}
-              exercises={exercises[currentPhase].technique}
-            />
-            
-            <ExerciseSection 
-              title="Application Practice" 
-              type="application" 
-              icon={MessageCircle}
-              exercises={exercises[currentPhase].application}
-            />
-            
-            <ExerciseSection 
-              title="Cool-Down & Reflection" 
-              type="cooldown" 
-              icon={Heart}
-              exercises={exercises[currentPhase].cooldown}
-            />
+            const advanceDay = () => {
+                if (Object.values(completedToday).every(v => v)) {
+                    const newTotalDays = totalDays + 1;
+                    setTotalDays(newTotalDays);
+                    
+                    const newDayInPhase = dayInPhase + 1;
+                    if (newDayInPhase > phases[currentPhase].days && currentPhase < 4) {
+                        setCurrentPhase(currentPhase + 1);
+                        setDayInPhase(1);
+                    } else {
+                        setDayInPhase(newDayInPhase);
+                    }
+                    
+                    setCompletedToday({ warmup: false, technique: false, application: false, cooldown: false });
+                    setDailyNote('');
+                    setStrainLevel(0);
+                    setLastCompletedDate(new Date().toDateString());
+                    checkMilestone(newTotalDays);
+                }
+            };
 
-            {/* Strain Check */}
-            <div className="bg-white rounded-lg shadow-sm border-2 border-yellow-100 p-4 mb-6">
-              <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <Volume2 className="text-yellow-500" size={20} />
-                Strain Level Check
-              </h3>
-              <p className="text-sm text-gray-600 mb-3">How does your voice feel? (0 = great, 5 = strained)</p>
-              <div className="flex gap-2">
-                {[0, 1, 2, 3, 4, 5].map(level => (
-                  <button
-                    key={level}
-                    onClick={() => setStrainLevel(level)}
-                    className={`flex-1 py-2 rounded-lg font-medium transition-all ${
-                      strainLevel === level
-                        ? level <= 2 ? 'bg-green-500 text-white' : level === 3 ? 'bg-yellow-500 text-white' : 'bg-red-500 text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    {level}
-                  </button>
-                ))}
-              </div>
-              {strainLevel >= 4 && (
-                <div className="mt-3 p-3 bg-red-50 rounded text-sm text-red-800">
-                  ⚠️ Take a break! Vocal strain can cause damage. Rest and hydrate.
-                </div>
-              )}
-            </div>
-
-            {/* Daily Note */}
-            <div className="bg-white rounded-lg shadow-sm border-2 border-purple-100 p-4 mb-6">
-              <h3 className="font-semibold text-gray-800 mb-3">Daily Reflection</h3>
-              <textarea
-                value={dailyNote}
-                onChange={(e) => setDailyNote(e.target.value)}
-                placeholder="What did you notice today? Any breakthroughs or challenges?"
-                className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
-                rows="4"
-              />
-            </div>
-
-            {/* Complete Day Button */}
-            {Object.values(completedToday).every(v => v) && (
-              <button
-                onClick={advanceDay}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
-              >
-                <Star size={24} />
-                Complete Day {totalDays}!
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Resources View */}
-        {currentView === 'resources' && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <Book className="text-purple-600" />
-                Voice Models & Educators
-              </h2>
-              <p className="text-gray-600 mb-6">
-                These creators have extensive public content to help you learn. Listen to their voices, study their patterns, and find someone whose voice resonates with your goals.
-              </p>
-              <div className="space-y-4">
-                {voiceModels.map((model, idx) => (
-                  <div key={idx} className="border border-purple-100 rounded-lg p-4 hover:bg-purple-50 transition-all">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-semibold text-gray-800">{model.name}</h3>
-                      <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">{model.platform}</span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">{model.description}</p>
-                    <div className="text-xs text-purple-600 font-medium">{model.link}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">Key Concepts</h2>
-              <div className="space-y-3 text-gray-700">
-                <div>
-                  <h3 className="font-semibold text-purple-700 mb-1">Resonance</h3>
-                  <p className="text-sm">Where your voice resonates in your body affects how it sounds. Raising resonance (oral/nasal vs chest) is often more impactful than pitch alone.</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-purple-700 mb-1">Pitch</h3>
-                  <p className="text-sm">The musical note of your voice. Most feminine voices sit around 180-220 Hz, but natural variation is key.</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-purple-700 mb-1">Intonation</h3>
-                  <p className="text-sm">The melody of speech - how your pitch moves through sentences. Often more gendered than base pitch.</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-purple-700 mb-1">Speech Patterns</h3>
-                  <p className="text-sm">Rhythm, pacing, word choices, and conversational style all contribute to voice presentation.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Progress View */}
-        {currentView === 'progress' && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <TrendingUp className="text-purple-600" />
-                Your Progress
-              </h2>
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-purple-50 rounded-lg p-4 text-center">
-                  <div className="text-3xl font-bold text-purple-600">{totalDays}</div>
-                  <div className="text-sm text-gray-600">Days Practiced</div>
-                </div>
-                <div className="bg-pink-50 rounded-lg p-4 text-center">
-                  <div className="text-3xl font-bold text-pink-600">{currentPhase}</div>
-                  <div className="text-sm text-gray-600">Current Phase</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <Award className="text-yellow-500" />
-                Milestones
-              </h2>
-              <div className="space-y-3">
-                {milestones.map((milestone, idx) => {
-                  const achieved = totalDays >= milestone.day;
-                  return (
-                    <div
-                      key={idx}
-                      className={`border-2 rounded-lg p-4 transition-all ${
-                        achieved
-                          ? 'border-yellow-300 bg-yellow-50'
-                          : 'border-gray-200 bg-gray-50 opacity-50'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={`mt-1 ${achieved ? 'text-yellow-500' : 'text-gray-400'}`}>
-                          {achieved ? <Star size={24} fill="currentColor" /> : <Star size={24} />}
+            const ExerciseSection = ({ title, type, icon: Icon, exercises }) => (
+                <div className="mb-6 bg-white rounded-lg shadow-sm border-2 border-purple-100 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                            <Icon />
+                            <h3 className="font-semibold text-gray-800">{title}</h3>
                         </div>
-                        <div className="flex-1">
-                          <div className="font-semibold text-gray-800">{milestone.title}</div>
-                          <div className="text-sm text-gray-600">Day {milestone.day}</div>
-                          {achieved && (
-                            <div className="text-sm text-gray-700 mt-1">{milestone.message}</div>
-                          )}
-                        </div>
-                      </div>
+                        <button
+                            onClick={() => completeExercise(type)}
+                            className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium transition-all ${
+                                completedToday[type]
+                                    ? 'bg-green-500 text-white'
+                                    : 'bg-gray-200 text-gray-600 hover:bg-purple-100'
+                            }`}
+                        >
+                            {completedToday[type] ? <CheckCircle2 width="16" height="16" /> : <Circle width="16" height="16" />}
+                            <span>{completedToday[type] ? 'Done!' : 'Mark Complete'}</span>
+                        </button>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+                    <ul className="space-y-2">
+                        {exercises.map((item, idx) => (
+                            <li key={idx} className="text-gray-700">
+                                <div className="flex items-start gap-2">
+                                    <span className="text-purple-400 mt-1">•</span>
+                                    <div className="flex-1">
+                                        <div className="font-medium">{item.exercise}</div>
+                                        <div className="text-sm text-gray-600 mt-1">{item.description}</div>
+                                    </div>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            );
 
-      {/* Celebration Modal */}
-      {showCelebration && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center animate-bounce">
-            <div className="text-6xl mb-4">🎉</div>
-            <h2 className="text-3xl font-bold text-purple-600 mb-2">{showCelebration.title}</h2>
-            <p className="text-gray-700 text-lg mb-6">{showCelebration.message}</p>
-            <button
-              onClick={() => setShowCelebration(false)}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg transition-all"
-            >
-              Thank you! 💜
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 p-4">
+                    <div className="max-w-4xl mx-auto">
+                        {/* Header */}
+                        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <h1 className="text-3xl font-bold text-gray-800 mb-1">Voice Training Journey</h1>
+                                    <p className="text-gray-600">Your voice, your way ✨</p>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-3xl font-bold text-purple-600">{totalDays}</div>
+                                    <div className="text-sm text-gray-600">days strong</div>
+                                </div>
+                            </div>
+                            
+                            {/* Phase Progress */}
+                            <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div>
+                                        <div className="text-sm font-medium text-purple-800">Phase {currentPhase}</div>
+                                        <div className="font-semibold text-gray-800">{phases[currentPhase].name}</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-sm text-gray-600">Weeks {phases[currentPhase].weeks}</div>
+                                        <div className="font-medium text-purple-600">{phases[currentPhase].duration}/day</div>
+                                    </div>
+                                </div>
+                                <div className="bg-white rounded-full h-2 overflow-hidden">
+                                    <div 
+                                        className="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-500"
+                                        style={{ width: `${(dayInPhase / phases[currentPhase].days) * 100}%` }}
+                                    />
+                                </div>
+                                <div className="text-xs text-gray-600 mt-1 text-right">
+                                    Day {dayInPhase} of {phases[currentPhase].days === 999 ? 'ongoing' : phases[currentPhase].days}
+                                </div>
+                            </div>
+                        </div>
 
-export default VoiceTrainingTracker;
+                        {/* Navigation */}
+                        <div className="flex gap-2 mb-6">
+                            {['today', 'resources', 'progress'].map(view => (
+                                <button
+                                    key={view}
+                                    onClick={() => setCurrentView(view)}
+                                    className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
+                                        currentView === view
+                                            ? 'bg-purple-600 text-white shadow-md'
+                                            : 'bg-white text-gray-600 hover:bg-purple-50'
+                                    }`}
+                                >
+                                    {view === 'today' && '📅 Today\'s Practice'}
+                                    {view === 'resources' && '📚 Resources'}
+                                    {view === 'progress' && '📈 Progress'}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Today's Practice View */}
+                        {currentView === 'today' && (
+                            <div>
+                                {/* Today's tip */}
+                                <div className="bg-blue-50 border-l-4 border-blue-400 rounded-lg p-4 mb-6">
+                                    <div className="flex items-start gap-3">
+                                        <Sparkles />
+                                        <div>
+                                            <div className="font-semibold text-blue-900 mb-1">Today's Tip</div>
+                                            <p className="text-blue-800">{tips[totalDays % tips.length]}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Exercise sections */}
+                                <ExerciseSection 
+                                    title="Warm-Up" 
+                                    type="warmup" 
+                                    icon={Wind}
+                                    exercises={exercises[currentPhase].warmup}
+                                />
+                                
+                                <ExerciseSection 
+                                    title="Technique Work" 
+                                    type="technique" 
+                                    icon={Mic}
+                                    exercises={exercises[currentPhase].technique}
+                                />
+                                
+                                <ExerciseSection 
+                                    title="Application Practice" 
+                                    type="application" 
+                                    icon={MessageCircle}
+                                    exercises={exercises[currentPhase].application}
+                                />
+                                
+                                <ExerciseSection 
+                                    title="Cool-Down & Reflection" 
+                                    type="cooldown" 
+                                    icon={Heart}
+                                    exercises={exercises[currentPhase].cooldown}
+                                />
+
+                                {/* Strain Check */}
+                                <div className="bg-white rounded-lg shadow-sm border-2 border-yellow-100 p-4 mb-6">
+                                    <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                                        <Volume2 />
+                                        <span>Strain Level Check</span>
+                                    </h3>
+                                    <p className="text-sm text-gray-600 mb-3">How does your voice feel? (0 = great, 5 = strained)</p>
+                                    <div className="flex gap-2">
+                                        {[0, 1, 2, 3, 4, 5].map(level => (
+                                            <button
+                                                key={level}
+                                                onClick={() => setStrainLevel(level)}
+                                                className={`flex-1 py-2 rounded-lg font-medium transition-all ${
+                                                    strainLevel === level
+                                                        ? level <= 2 ? 'bg-green-500 text-white' : level === 3 ? 'bg-yellow-500 text-white' : 'bg-red-500 text-white'
+                                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                }`}
+                                            >
+                                                {level}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {strainLevel >= 4 && (
+                                        <div className="mt-3 p-3 bg-red-50 rounded text-sm text-red-800">
+                                            ⚠️ Take a break! Vocal strain can cause damage. Rest and hydrate.
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Daily Note */}
+                                <div className="bg-white rounded-lg shadow-sm border-2 border-purple-100 p-4 mb-6">
+                                    <h3 className="font-semibold text-gray-800 mb-3">Daily Reflection</h3>
+                                    <textarea
+                                        value={dailyNote}
+                                        onChange={(e) => setDailyNote(e.target.value)}
+                                        placeholder="What did you notice today? Any breakthroughs or challenges?"
+                                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+                                        rows="4"
+                                    />
+                                </div>
+
+                                {/* Complete Day Button */}
+                                {Object.values(completedToday).every(v => v) && (
+                                    <button
+                                        onClick={advanceDay}
+                                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <Star width="24" height="24" />
+                                        <span>Complete Day {totalDays}!</span>
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Resources View */}
+                        {currentView === 'resources' && (
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-lg shadow-lg p-6">
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                        <Book />
+                                        <span>Voice Models & Educators</span>
+                                    </h2>
+                                    <p className="text-gray-600 mb-6">
+                                        These creators have extensive public content to help you learn. Listen to their voices, study their patterns, and find someone whose voice resonates with your goals.
+                                    </p>
+                                    <div className="space-y-4">
+                                        {voiceModels.map((model, idx) => (
+                                            <div key={idx} className="border border-purple-100 rounded-lg p-4 hover:bg-purple-50 transition-all">
+                                                <div className="flex items-start justify-between mb-2">
+                                                    <h3 className="font-semibold text-gray-800">{model.name}</h3>
+                                                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">{model.platform}</span>
+                                                </div>
+                                                <p className="text-sm text-gray-600 mb-2">{model.description}</p>
+                                                <div className="text-xs text-purple-600 font-medium">{model.link}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-lg shadow-lg p-6">
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Key Concepts</h2>
+                                    <div className="space-y-3 text-gray-700">
+                                        <div>
+                                            <h3 className="font-semibold text-purple-700 mb-1">Resonance</h3>
+                                            <p className="text-sm">Where your voice resonates in your body affects how it sounds. Raising resonance (oral/nasal vs chest) is often more impactful than pitch alone.</p>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-purple-700 mb-1">Pitch</h3>
+                                            <p className="text-sm">The musical note of your voice. Most feminine voices sit around 180-220 Hz, but natural variation is key.</p>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-purple-700 mb-1">Intonation</h3>
+                                            <p className="text-sm">The melody of speech - how your pitch moves through sentences. Often more gendered than base pitch.</p>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-purple-700 mb-1">Speech Patterns</h3>
+                                            <p className="text-sm">Rhythm, pacing, word choices, and conversational style all contribute to voice presentation.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Progress View */}
+                        {currentView === 'progress' && (
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-lg shadow-lg p-6">
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                        <TrendingUp />
+                                        <span>Your Progress</span>
+                                    </h2>
+                                    <div className="grid grid-cols-2 gap-4 mb-6">
+                                        <div className="bg-purple-50 rounded-lg p-4 text-center">
+                                            <div className="text-3xl font-bold text-purple-600">{totalDays}</div>
+                                            <div className="text-sm text-gray-600">Days Practiced</div>
+                                        </div>
+                                        <div className="bg-pink-50 rounded-lg p-4 text-center">
+                                            <div className="text-3xl font-bold text-pink-600">{currentPhase}</div>
+                                            <div className="text-sm text-gray-600">Current Phase</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-lg shadow-lg p-6">
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                        <Award />
+                                        <span>Milestones</span>
+                                    </h2>
+                                    <div className="space-y-3">
+                                        {milestones.map((milestone, idx) => {
+                                            const achieved = totalDays >= milestone.day;
+                                            return (
+                                                <div
+                                                    key={idx}
+                                                    className={`border-2 rounded-lg p-4 transition-all ${
+                                                        achieved
+                                                            ? 'border-yellow-300 bg-yellow-50'
+                                                            : 'border-gray-200 bg-gray-50 opacity-50'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-start gap-3">
+                                                        <div className={`mt-1 ${achieved ? 'text-yellow-500' : 'text-gray-400'}`}>
+                                                            {achieved ? <Star width="24" height="24" fill="currentColor" /> : <Star width="24" height="24" />}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="font-semibold text-gray-800">{milestone.title}</div>
+                                                            <div className="text-sm text-gray-600">Day {milestone.day}</div>
+                                                            {achieved && (
+                                                                <div className="text-sm text-gray-700 mt-1">{milestone.message}</div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Celebration Modal */}
+                    {showCelebration && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center animate-bounce">
+                                <div className="text-6xl mb-4">🎉</div>
+                                <h2 className="text-3xl font-bold text-purple-600 mb-2">{showCelebration.title}</h2>
+                                <p className="text-gray-700 text-lg mb-6">{showCelebration.message}</p>
+                                <button
+                                    onClick={() => setShowCelebration(false)}
+                                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg transition-all"
+                                >
+                                    Thank you! 💜
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        ReactDOM.render(<VoiceTrainingTracker />, document.getElementById('root'));
+    </script>
+</body>
+</html>
